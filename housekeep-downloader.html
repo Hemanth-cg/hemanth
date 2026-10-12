@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HouseKeep — Project File Downloader</title>
+<style>
+  body{font-family:"Segoe UI",system-ui,sans-serif;background:#f1f5f9;margin:0;color:#334155}
+  header{background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff;padding:34px 20px;text-align:center}
+  h1{margin:0 0 6px;font-size:1.7rem}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+  .zipbox{background:#0f172a;color:#fff;border-radius:14px;padding:22px;text-align:center;margin-bottom:26px}
+  .zipbox button{background:#f59e0b;border:none;color:#fff;font-size:1.05rem;font-weight:700;padding:14px 30px;border-radius:50px;cursor:pointer}
+  .zipbox button:hover{background:#d97706}
+  .group{background:#fff;border-radius:14px;box-shadow:0 4px 14px rgba(15,23,42,.08);margin-bottom:18px;overflow:hidden}
+  .group h2{margin:0;padding:13px 18px;font-size:1rem;background:#f0fdfa;color:#0f766e;border-bottom:1px solid #ccfbf1}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #f1f5f9}
+  .row:last-child{border-bottom:none}
+  .row .path{flex:1;font-family:Consolas,monospace;font-size:.9rem;word-break:break-all}
+  .row .size{color:#94a3b8;font-size:.8rem;min-width:52px;text-align:right}
+  .row button{background:#0d9488;color:#fff;border:none;padding:7px 14px;border-radius:20px;font-weight:600;cursor:pointer;font-size:.82rem}
+  .row button:hover{background:#0f766e}
+  .note{background:#fefce8;border:1px solid #fde047;color:#854d0e;padding:12px 16px;border-radius:10px;font-size:.88rem;margin-bottom:20px}
+  footer{text-align:center;color:#94a3b8;font-size:.82rem;padding:10px}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 22px;border-radius:50px;font-weight:600;opacity:0;pointer-events:none;transition:.3s}
+  #toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏡 HouseKeep Shimoga — Project Downloader</h1>
+  <p>React JS + Python (Flask) · click any file to download it, or grab everything as a ZIP</p>
+</header>
+<div class="wrap">
+  <div class="zipbox">
+    <h2 style="margin:0 0 6px">⬇ Download Everything</h2>
+    <p style="margin:0 0 14px;color:#cbd5e1">Creates <b>housekeep.zip</b> with all folders &amp; files (works offline)</p>
+    <button onclick="downloadZip()">📦 Download housekeep.zip</button>
+  </div>
+  <div class="note">💡 Tip: use the ZIP button — it keeps the folder structure (<b>backend/</b>, <b>frontend/</b>). Single downloads land in your Downloads folder by filename only.</div>
+  <div id="list"></div>
+</div>
+<div id="toast">✅ Downloaded!</div>
+<footer>HouseKeep Shimoga · works 100% offline · no internet needed</footer>
+
+<!-- ==================== EMBEDDED PROJECT FILES (19) ==================== -->
+
+<script type="text/plain" data-path="README.md">
+# 🏡 HouseKeep — Shimoga Home Services Website
+
+Cleaning | House Shifting | Repairs | Pest Control | Cook & Maid | Gardening
+
+## Tech Stack
+- Frontend: React JS
+- Backend: Python (Flask + SQLite)
+
+## How to Run
+
+### 1. Backend
+    cd backend
+    pip install -r requirements.txt
+    python app.py
+    → http://localhost:5000
+
+### 2. Frontend
+    cd frontend
+    npm install
+    npm start
+    → http://localhost:3000
+</script>
+
+<script type="text/plain" data-path=".gitignore">
+node_modules/
+build/
+__pycache__/
+*.pyc
+*.db
+instance/
+.env
+</script>
+
+<script type="text/plain" data-path="backend/requirements.txt">
+flask==3.0.3
+flask-cors==4.0.1
+flask-sqlalchemy==3.1.1
+</script>
+
+<script type="text/plain" data-path="backend/models.py">
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+db = SQLAlchemy()
+
+
+class Booking(db.Model):
+    __tablename__ = "bookings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(15), nullable=False)
+    email = db.Column(db.String(120), default="")
+    service = db.Column(db.String(100), nullable=False)
+    address = db.Column(db.String(300), nullable=False)
+    date = db.Column(db.String(20), nullable=False)
+    time = db.Column(db.String(20), nullable=False)
+    notes = db.Column(db.Text, default="")
+    status = db.Column(db.String(20), default="Pending")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "phone": self.phone,
+            "email": self.email,
+            "service": self.service,
+            "address": self.address,
+            "date": self.date,
+            "time": self.time,
+            "notes": self.notes,
+            "status": self.status,
+            "created_at": self.created_at.strftime("%d %b %Y, %I:%M %p"),
+        }
+
+
+class ContactMessage(db.Model):
+    __tablename__ = "contact_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "message": self.message,
+            "created_at": self.created_at.strftime("%d %b %Y, %I:%M %p"),
+        }
+</script>
+
+<script type="text/plain" data-path="backend/app.py">
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from models import db, Booking, ContactMessage
+
+app = Flask(__name__)
+CORS(app)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///housekeep.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+# ---------------- Service catalogue ----------------
+SERVICES = [
+    {"id": 1,  "name": "Full Home Deep Cleaning", "icon": "🏠", "price": 1499, "unit": "starting", "category": "cleaning",
+     "description": "Complete deep cleaning of bedrooms, hall, kitchen & bathrooms with professional equipment."},
+    {"id": 2,  "name": "Bathroom Cleaning",       "icon": "🚿", "price": 199,  "unit": "starting", "category": "cleaning",
+     "description": "Tile scrubbing, stain removal, sanitisation of toilets, sinks and fittings."},
+    {"id": 3,  "name": "Kitchen Cleaning",        "icon": "🍽️", "price": 399,  "unit": "starting", "category": "cleaning",
+     "description": "Degreasing of chimney, stove, counters, cabinets and sink deep clean."},
+    {"id": 4,  "name": "Sofa & Carpet Cleaning",  "icon": "🛋️", "price": 299,  "unit": "starting", "category": "cleaning",
+     "description": "Shampoo wash and vacuum treatment for sofas, carpets and mattresses."},
+    {"id": 5,  "name": "House Shifting (Local)",  "icon": "📦", "price": 1999, "unit": "starting", "category": "shifting",
+     "description": "Packing, loading, transport and unloading within Shimoga city. Trained labour included."},
+    {"id": 6,  "name": "Packing Services Only",   "icon": "🧳", "price": 799,  "unit": "starting", "category": "shifting",
+     "description": "Professional packing of household items with quality material — boxes, bubble wrap & tape."},
+    {"id": 7,  "name": "Plumbing Repairs",        "icon": "🔧", "price": 149,  "unit": "visit",    "category": "repair",
+     "description": "Leaky taps, blocked drains, pipe fitting, flush repair and water tank cleaning."},
+    {"id": 8,  "name": "Electrician Services",    "icon": "💡", "price": 149,  "unit": "visit",    "category": "repair",
+     "description": "Switch board repair, fan/light installation, wiring fixes and inverter setup."},
+    {"id": 9,  "name": "Carpenter Services",      "icon": "🪚", "price": 199,  "unit": "visit",    "category": "repair",
+     "description": "Furniture repair, door/hinge fixing, curtain rod and shelf installation."},
+    {"id": 10, "name": "Appliance Repair",        "icon": "🧺", "price": 249,  "unit": "visit",    "category": "repair",
+     "description": "Expert repair of AC, refrigerator, washing machine, geyser and microwave."},
+    {"id": 11, "name": "Home Painting",           "icon": "🎨", "price": 999,  "unit": "starting", "category": "repair",
+     "description": "Interior & exterior painting with premium paints, putty and finishing."},
+    {"id": 12, "name": "Pest Control",            "icon": "🐜", "price": 799,  "unit": "starting", "category": "other",
+     "description": "Cockroach, termite, mosquito and bed bug treatment — safe & odourless."},
+    {"id": 13, "name": "Cook & Maid Services",    "icon": "👩‍🍳", "price": 299, "unit": "per day", "category": "other",
+     "description": "Verified cooks and housekeeping staff on daily or monthly basis."},
+    {"id": 14, "name": "Gardening & Plants",      "icon": "🌿", "price": 299,  "unit": "visit",    "category": "other",
+     "description": "Garden maintenance, trimming, lawn care and plant decoration."},
+]
+
+
+# ---------------- Routes ----------------
+@app.get("/api/services")
+def get_services():
+    category = request.args.get("category")
+    data = SERVICES
+    if category:
+        data = [s for s in SERVICES if s["category"] == category]
+    return jsonify(data)
+
+
+@app.get("/api/services/<int:service_id>")
+def get_service(service_id):
+    service = next((s for s in SERVICES if s["id"] == service_id), None)
+    if not service:
+        return jsonify({"error": "Service not found"}), 404
+    return jsonify(service)
+
+
+@app.post("/api/book")
+def create_booking():
+    data = request.get_json(silent=True) or {}
+
+    required = ["name", "phone", "service", "address", "date", "time"]
+    missing = [f for f in required if not str(data.get(f, "")).strip()]
+    if missing:
+        return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
+
+    phone = str(data["phone"]).strip()
+    if not (phone.isdigit() and len(phone) == 10):
+        return jsonify({"error": "Please enter a valid 10-digit phone number"}), 400
+
+    booking = Booking(
+        name=data["name"].strip(),
+        phone=phone,
+        email=data.get("email", "").strip(),
+        service=data["service"].strip(),
+        address=data["address"].strip(),
+        date=data["date"].strip(),
+        time=data["time"].strip(),
+        notes=data.get("notes", "").strip(),
+    )
+    db.session.add(booking)
+    db.session.commit()
+
+    return jsonify({
+        "message": f"Booking confirmed! Our HouseKeep team will call you on {phone} shortly.",
+        "booking_id": booking.id,
+        "booking": booking.to_dict(),
+    }), 201
+
+
+@app.get("/api/bookings")
+def get_bookings():
+    bookings = Booking.query.order_by(Booking.created_at.desc()).all()
+    return jsonify([b.to_dict() for b in bookings])
+
+
+@app.put("/api/bookings/<int:booking_id>/status")
+def update_booking_status(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    data = request.get_json(silent=True) or {}
+    if data.get("status") in ("Pending", "Confirmed", "Completed", "Cancelled"):
+        booking.status = data["status"]
+        db.session.commit()
+        return jsonify(booking.to_dict())
+    return jsonify({"error": "Invalid status"}), 400
+
+
+@app.post("/api/contact")
+def contact():
+    data = request.get_json(silent=True) or {}
+    if not data.get("name") or not data.get("email") or not data.get("message"):
+        return jsonify({"error": "Name, email and message are required"}), 400
+
+    msg = ContactMessage(
+        name=data["name"].strip(),
+        email=data["email"].strip(),
+        message=data["message"].strip(),
+    )
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify({"message": "Thank you! We will get back to you soon."}), 201
+
+
+@app.get("/api/health")
+def health():
+    return jsonify({"status": "ok", "service": "HouseKeep Shimoga API"})
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
+</script>
+
+<script type="text/plain" data-path="frontend/package.json">
+{
+  "name": "housekeep-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version"]
+  }
+}
+</script>
+
+<script type="text/plain" data-path="frontend/public/index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d9488" />
+    <meta name="description" content="HouseKeep Shimoga — Cleaning, Shifting, Repairs & Home Services" />
+    <title>HouseKeep | Home Services in Shimoga</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
+</script>
+
+<script type="text/plain" data-path="frontend/src/index.js">
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+</script>
+
+<script type="text/plain" data-path="frontend/src/App.jsx">
+import Navbar from "./components/Navbar";
+import Hero from "./components/Hero";
+import Services from "./components/Services";
+import HowItWorks from "./components/HowItWorks";
+import WhyUs from "./components/WhyUs";
+import BookingForm from "./components/BookingForm";
+import Testimonials from "./components/Testimonials";
+import ServiceAreas from "./components/ServiceAreas";
+import Footer from "./components/Footer";
+
+function App() {
+  return (
+    <div className="app">
+      <Navbar />
+      <Hero />
+      <Services />
+      <HowItWorks />
+      <WhyUs />
+      <BookingForm />
+      <Testimonials />
+      <ServiceAreas />
+      <Footer />
+    </div>
+  );
+}
+
+export default App;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/Navbar.jsx">
+import { useState } from "react";
+
+const links = [
+  { label: "Home", href: "#home" },
+  { label: "Services", href: "#services" },
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Why Us", href: "#why-us" },
+  { label: "Book Now", href: "#booking" },
+  { label: "Contact", href: "#contact" },
+];
+
+function Navbar() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <nav className="navbar">
+      <div className="container nav-inner">
+        <a href="#home" className="logo">
+          <span className="logo-icon">🏡</span>
+          <span>
+            House<span className="logo-accent">Keep</span>
+          </span>
+          <small className="logo-city">Shimoga</small>
+        </a>
+
+        <ul className={`nav-links ${open ? "open" : ""}`}>
+          {links.map((l) => (
+            <li key={l.label}>
+              <a href={l.href} onClick={() => setOpen(false)}>{l.label}</a>
+            </li>
+          ))}
+          <li>
+            <a href="tel:+919876543210" className="btn btn-sm">📞 +91 98765 43210</a>
+          </li>
+        </ul>
+
+        <button className="hamburger" onClick={() => setOpen(!open)} aria-label="Menu">
+          {open ? "✕" : "☰"}
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+export default Navbar;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/Hero.jsx">
+function Hero() {
+  return (
+    <header className="hero" id="home">
+      <div className="container hero-inner">
+        <div className="hero-text">
+          <span className="badge">✨ Shimoga's Trusted Home Services</span>
+          <h1>
+            Your Home, <span className="highlight">Our Care</span> — Clean,
+            Shift & Repair Made Easy
+          </h1>
+          <p>
+            Professional cleaning, hassle-free house shifting, expert repairs
+            and more. Verified professionals serving every corner of Shimoga
+            at fair prices.
+          </p>
+          <div className="hero-actions">
+            <a href="#booking" className="btn btn-lg">Book a Service</a>
+            <a href="#services" className="btn btn-outline btn-lg">Explore Services</a>
+          </div>
+          <div className="hero-stats">
+            <div><strong>5,000+</strong><span>Jobs Done</span></div>
+            <div><strong>4.8★</strong><span>Avg. Rating</span></div>
+            <div><strong>60+</strong><span>Verified Pros</span></div>
+            <div><strong>100%</strong><span>Shimoga Local</span></div>
+          </div>
+        </div>
+
+        <div className="hero-cards">
+          <div className="float-card"><span>🧹</span> Deep Cleaning<br /><b>from ₹1,499</b></div>
+          <div className="float-card"><span>📦</span> House Shifting<br /><b>from ₹1,999</b></div>
+          <div className="float-card"><span>🔧</span> Home Repairs<br /><b>from ₹149</b></div>
+          <div className="float-card main-card">
+            <h3>🛠️ All Home Needs,<br />One Call Away</h3>
+            <p>Same-day service available across Shimoga</p>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export default Hero;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/Services.jsx">
+import { useEffect, useState } from "react";
+
+const API_URL = "http://localhost:5000/api/services";
+
+const CATEGORIES = [
+  { key: "all", label: "All Services" },
+  { key: "cleaning", label: "🧹 Cleaning" },
+  { key: "shifting", label: "📦 Shifting" },
+  { key: "repair", label: "🔧 Repairs" },
+  { key: "other", label: "✨ Other" },
+];
+
+function Services() {
+  const [services, setServices] = useState([]);
+  const [category, setCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(API_URL)
+      .then((res) => res.json())
+      .then((data) => setServices(data))
+      .catch(() => setServices([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const visible =
+    category === "all" ? services : services.filter((s) => s.category === category);
+
+  return (
+    <section className="section" id="services">
+      <div className="container">
+        <div className="section-head">
+          <h2>Our Services</h2>
+          <p>Everything your home needs — delivered by trained, background-verified professionals.</p>
+        </div>
+
+        <div className="filters">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.key}
+              className={`filter-btn ${category === c.key ? "active" : ""}`}
+              onClick={() => setCategory(c.key)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <p className="loading">Loading services…</p>
+        ) : (
+          <div className="grid services-grid">
+            {visible.map((s) => (
+              <div className="card service-card" key={s.id}>
+                <div className="service-icon">{s.icon}</div>
+                <h3>{s.name}</h3>
+                <p>{s.description}</p>
+                <div className="service-footer">
+                  <span className="price">
+                    ₹{s.price.toLocaleString("en-IN")} <small>{s.unit}</small>
+                  </span>
+                  <a href="#booking" className="btn btn-sm">Book Now</a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export default Services;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/HowItWorks.jsx">
+const steps = [
+  { icon: "📱", title: "1. Book Online", text: "Choose your service, pick a date & time that suits you." },
+  { icon: "📋", title: "2. Get Confirmation", text: "We call you to confirm details and share a transparent quote." },
+  { icon: "🧑‍🔧", title: "3. Pro Arrives", text: "A verified HouseKeep professional arrives on time with tools." },
+  { icon: "✅", title: "4. Relax & Pay", text: "Job done to your satisfaction. Pay after service — no advance." },
+];
+
+function HowItWorks() {
+  return (
+    <section className="section section-dark" id="how-it-works">
+      <div className="container">
+        <div className="section-head light">
+          <h2>How It Works</h2>
+          <p>Booking home services in Shimoga has never been this simple.</p>
+        </div>
+        <div className="grid steps-grid">
+          {steps.map((s) => (
+            <div className="step-card" key={s.title}>
+              <div className="step-icon">{s.icon}</div>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default HowItWorks;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/WhyUs.jsx">
+const reasons = [
+  { icon: "🛡️", title: "Verified Professionals", text: "Every professional is background-checked, trained and ID-verified." },
+  { icon: "💰", title: "Transparent Pricing", text: "Upfront quotes, no hidden charges. Pay only after the job is done." },
+  { icon: "⏰", title: "On-Time, Every Time", text: "Same-day and slot-based bookings across Shimoga city." },
+  { icon: "🔄", title: "Service Guarantee", text: "Not satisfied? We re-do the job free within 48 hours." },
+  { icon: "🧰", title: "Own Equipment", text: "Our teams bring tools, ladders, machines & eco-friendly supplies." },
+  { icon: "🏠", title: "Locally Rooted", text: "Proudly Shimoga-based — we know the city and its people." },
+];
+
+function WhyUs() {
+  return (
+    <section className="section" id="why-us">
+      <div className="container">
+        <div className="section-head">
+          <h2>Why Shimoga Chooses HouseKeep</h2>
+          <p>We treat every home like our own.</p>
+        </div>
+        <div className="grid reasons-grid">
+          {reasons.map((r) => (
+            <div className="card reason-card" key={r.title}>
+              <div className="reason-icon">{r.icon}</div>
+              <h3>{r.title}</h3>
+              <p>{r.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default WhyUs;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/BookingForm.jsx">
+import { useState } from "react";
+
+const API_URL = "http://localhost:5000/api/book";
+
+const TIME_SLOTS = [
+  "08:00 AM – 10:00 AM", "10:00 AM – 12:00 PM", "12:00 PM – 02:00 PM",
+  "02:00 PM – 04:00 PM", "04:00 PM – 06:00 PM", "06:00 PM – 08:00 PM",
+];
+
+const SERVICE_OPTIONS = [
+  "Full Home Deep Cleaning", "Bathroom Cleaning", "Kitchen Cleaning",
+  "Sofa & Carpet Cleaning", "House Shifting (Local)", "Packing Services Only",
+  "Plumbing Repairs", "Electrician Services", "Carpenter Services",
+  "Appliance Repair", "Home Painting", "Pest Control",
+  "Cook & Maid Services", "Gardening & Plants", "Other",
+];
+
+function BookingForm() {
+  const [form, setForm] = useState({
+    name: "", phone: "", email: "", service: "",
+    address: "", date: "", time: "", notes: "",
+  });
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus({ type: "success", message: data.message });
+        setForm({ name: "", phone: "", email: "", service: "", address: "", date: "", time: "", notes: "" });
+      } else {
+        setStatus({ type: "error", message: data.error || "Something went wrong." });
+      }
+    } catch {
+      setStatus({ type: "error", message: "Cannot reach server. Is the backend running on port 5000?" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="section section-accent" id="booking">
+      <div className="container booking-wrap">
+        <div className="booking-info">
+          <h2>Book a Service</h2>
+          <p>Fill the form and our team will call you back within 15 minutes to confirm.</p>
+          <ul className="booking-points">
+            <li>✅ No advance payment</li>
+            <li>✅ Free rescheduling up to 2 hours before</li>
+            <li>✅ Service available 7 days a week</li>
+            <li>✅ Serving all Shimoga localities</li>
+          </ul>
+          <div className="booking-call">
+            Prefer to talk? <a href="tel:+919876543210">Call +91 98765 43210</a>
+          </div>
+        </div>
+
+        <form className="booking-form card" onSubmit={handleSubmit}>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Your Name *</label>
+              <input name="name" value={form.name} onChange={handleChange} placeholder="e.g. Ramesh Gowda" required />
+            </div>
+            <div className="form-group">
+              <label>Phone Number *</label>
+              <input name="phone" value={form.phone} onChange={handleChange}
+                     placeholder="10-digit mobile number" pattern="[0-9]{10}" required />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Email (optional)</label>
+              <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="you@example.com" />
+            </div>
+            <div className="form-group">
+              <label>Select Service *</label>
+              <select name="service" value={form.service} onChange={handleChange} required>
+                <option value="">— Choose a service —</option>
+                {SERVICE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Full Address in Shimoga *</label>
+            <textarea name="address" value={form.address} onChange={handleChange}
+                      rows="2" placeholder="House no, street, area, landmark" required />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Preferred Date *</label>
+              <input type="date" name="date" value={form.date}
+                     min={new Date().toISOString().split("T")[0]}
+                     onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Preferred Time *</label>
+              <select name="time" value={form.time} onChange={handleChange} required>
+                <option value="">— Choose a slot —</option>
+                {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Special Instructions (optional)</label>
+            <textarea name="notes" value={form.notes} onChange={handleChange}
+                      rows="2" placeholder="e.g. 2BHK, 2nd floor, please bring ladder" />
+          </div>
+
+          <button className="btn btn-lg btn-full" disabled={submitting}>
+            {submitting ? "Booking…" : "Confirm Booking"}
+          </button>
+
+          {status.message && (
+            <div className={`form-status ${status.type}`}>{status.message}</div>
+          )}
+        </form>
+      </div>
+    </section>
+  );
+}
+
+export default BookingForm;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/Testimonials.jsx">
+const testimonials = [
+  { name: "Sushma H.", area: "Vinobanagar", text: "Booked deep cleaning before Diwali. The team was punctual and my house was sparkling. Best in Shimoga!", rating: 5 },
+  { name: "Prakash N.", area: "Gopala", text: "Shifted from Gopala to Nehru Nagar. Packing was very professional and nothing was damaged. Reasonable price.", rating: 5 },
+  { name: "Anitha R.", area: "Kuvempunagar", text: "Their plumber fixed our bathroom leak the same day I booked. Very polite and clean work.", rating: 4 },
+  { name: "Mahesh B.", area: "Jayanagar", text: "Monthly maid service from HouseKeep has been reliable for 6 months now. Highly recommend.", rating: 5 },
+];
+
+function Testimonials() {
+  return (
+    <section className="section" id="testimonials">
+      <div className="container">
+        <div className="section-head">
+          <h2>What Shimoga Says</h2>
+          <p>Trusted by hundreds of families across the city.</p>
+        </div>
+        <div className="grid testimonials-grid">
+          {testimonials.map((t) => (
+            <div className="card testimonial-card" key={t.name}>
+              <div className="stars">{"★".repeat(t.rating)}{"☆".repeat(5 - t.rating)}</div>
+              <p>"{t.text}"</p>
+              <div className="testimonial-author">
+                <strong>{t.name}</strong><span> — {t.area}, Shimoga</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default Testimonials;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/ServiceAreas.jsx">
+const areas = [
+  "Gandhi Bazaar", "Gopala", "Vinobanagar", "Nehru Nagar", "Kuvempunagar",
+  "Jayanagar", "Durgigudi", "KR Puram", "BH Road", "Sagara Road",
+  "Thirthahalli Road", "Anupama Nagar", "Shivamogga Extension", "Sakrebyle",
+  "Holehonnur Road", "Shimoga Industrial Area",
+];
+
+function ServiceAreas() {
+  return (
+    <section className="section section-light" id="areas">
+      <div className="container center">
+        <h2>📍 Areas We Serve in Shimoga</h2>
+        <p className="muted">Don't see your area? Call us — we probably cover it too!</p>
+        <div className="areas-chips">
+          {areas.map((a) => <span className="chip" key={a}>{a}</span>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default ServiceAreas;
+</script>
+
+<script type="text/plain" data-path="frontend/src/components/Footer.jsx">
+function Footer() {
+  return (
+    <footer className="footer" id="contact">
+      <div className="container footer-grid">
+        <div>
+          <h3>🏡 House<span className="logo-accent">Keep</span></h3>
+          <p>Shimoga's one-stop destination for cleaning, shifting, repairs and daily home care.</p>
+        </div>
+        <div>
+          <h4>Quick Links</h4>
+          <a href="#services">Services</a>
+          <a href="#booking">Book Now</a>
+          <a href="#how-it-works">How It Works</a>
+          <a href="#why-us">Why Us</a>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <p>📞 +91 98765 43210</p>
+          <p>✉️ care@housekeep.in</p>
+          <p>📍 2nd Main, Gandhi Bazaar,<br />Shimoga, Karnataka 577201</p>
+        </div>
+        <div>
+          <h4>Timings</h4>
+          <p>Mon – Sun: 7 AM – 9 PM</p>
+          <p>Emergency repairs: 24×7</p>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        © {new Date().getFullYear()} HouseKeep Shimoga. All rights reserved.
+      </div>
+    </footer>
+  );
+}
+
+export default Footer;
+</script>
+
+<script type="text/plain" data-path="frontend/src/index.css">
+/* ============ Reset & Base ============ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #0d9488;
+  --primary-dark: #0f766e;
+  --dark: #0f172a;
+  --accent: #f59e0b;
+  --bg: #f8fafc;
+  --text: #334155;
+  --muted: #64748b;
+  --radius: 14px;
+  --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.container { max-width: 1150px; margin: 0 auto; padding: 0 20px; }
+.center { text-align: center; }
+.muted { color: var(--muted); }
+
+h1, h2, h3 { color: var(--dark); line-height: 1.25; }
+h2 { font-size: 2rem; margin-bottom: 8px; }
+
+/* ============ Buttons ============ */
+.btn {
+  display: inline-block; background: var(--primary); color: #fff;
+  padding: 11px 22px; border-radius: 50px; text-decoration: none;
+  font-weight: 600; border: 2px solid var(--primary); cursor: pointer;
+  transition: 0.2s; font-size: 0.95rem;
+}
+.btn:hover { background: var(--primary-dark); border-color: var(--primary-dark); transform: translateY(-2px); }
+.btn-sm { padding: 7px 16px; font-size: 0.85rem; }
+.btn-lg { padding: 14px 30px; font-size: 1.05rem; }
+.btn-full { width: 100%; }
+.btn-outline { background: transparent; color: var(--primary); }
+.btn-outline:hover { background: var(--primary); color: #fff; }
+
+/* ============ Navbar ============ */
+.navbar {
+  position: sticky; top: 0; z-index: 100; background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; }
+.logo { font-size: 1.4rem; font-weight: 800; color: var(--dark); text-decoration: none; display: flex; align-items: center; gap: 6px; }
+.logo-accent { color: var(--primary); }
+.logo-city { background: var(--accent); color: #fff; font-size: 0.6rem; padding: 2px 8px; border-radius: 20px; margin-left: 4px; font-weight: 700; text-transform: uppercase; }
+.nav-links { display: flex; align-items: center; gap: 22px; list-style: none; }
+.nav-links a { text-decoration: none; color: var(--text); font-weight: 500; }
+.nav-links a:hover { color: var(--primary); }
+.hamburger { display: none; font-size: 1.5rem; background: none; border: none; cursor: pointer; color: var(--dark); }
+
+/* ============ Hero ============ */
+.hero { background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%); padding: 70px 0 80px; }
+.hero-inner { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 50px; align-items: center; }
+.badge { display: inline-block; background: #ccfbf1; color: var(--primary-dark); padding: 6px 16px; border-radius: 50px; font-weight: 600; font-size: 0.85rem; margin-bottom: 18px; }
+.hero h1 { font-size: 2.7rem; margin-bottom: 16px; }
+.highlight { color: var(--primary); }
+.hero p { color: var(--muted); font-size: 1.08rem; margin-bottom: 26px; }
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 34px; }
+.hero-stats { display: flex; gap: 34px; flex-wrap: wrap; }
+.hero-stats div { display: flex; flex-direction: column; }
+.hero-stats strong { font-size: 1.4rem; color: var(--dark); }
+.hero-stats span { font-size: 0.82rem; color: var(--muted); }
+
+.hero-cards { position: relative; height: 360px; }
+.float-card {
+  position: absolute; background: #fff; border-radius: var(--radius);
+  padding: 16px 22px; box-shadow: var(--shadow); font-size: 0.95rem;
+  border-left: 4px solid var(--primary);
+}
+.float-card b { color: var(--primary-dark); }
+.float-card.main-card {
+  top: 26%; left: 24%; background: var(--dark); color: #fff; border: none;
+  padding: 30px 34px; text-align: center; border-radius: 20px;
+}
+.float-card.main-card h3 { color: #fff; font-size: 1.25rem; margin-bottom: 8px; }
+.float-card.main-card p { color: #cbd5e1; font-size: 0.9rem; }
+.float-card:nth-child(1) { top: 2%; left: 0; }
+.float-card:nth-child(2) { top: 20%; right: 0; }
+.float-card:nth-child(3) { bottom: 6%; left: 6%; }
+
+/* ============ Sections ============ */
+.section { padding: 72px 0; }
+.section-head { text-align: center; max-width: 620px; margin: 0 auto 40px; }
+.section-head p { color: var(--muted); }
+.section-head.light h2, .section-head.light p { color: #fff; }
+.section-dark { background: var(--dark); }
+.section-dark h3 { color: #fff; }
+.section-accent { background: linear-gradient(135deg, #0f766e, #0d9488); }
+.section-accent h2, .section-accent p, .section-accent li { color: #fff; }
+.section-light { background: #fff; }
+
+.grid { display: grid; gap: 22px; }
+.services-grid { grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); }
+
+.card {
+  background: #fff; border-radius: var(--radius); padding: 26px;
+  box-shadow: var(--shadow); transition: 0.25s;
+}
+.card:hover { transform: translateY(-5px); }
+
+/* ============ Filters ============ */
+.filters { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 34px; }
+.filter-btn {
+  background: #fff; border: 2px solid #e2e8f0; padding: 9px 20px;
+  border-radius: 50px; cursor: pointer; font-weight: 600; color: var(--muted);
+  transition: 0.2s;
+}
+.filter-btn.active, .filter-btn:hover { border-color: var(--primary); color: var(--primary-dark); background: #f0fdfa; }
+
+/* ============ Service Cards ============ */
+.service-icon { font-size: 2.2rem; margin-bottom: 12px; }
+.service-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+.service-card p { font-size: 0.9rem; color: var(--muted); margin-bottom: 16px; }
+.service-footer { display: flex; justify-content: space-between; align-items: center; }
+.price { font-weight: 800; color: var(--dark); font-size: 1.1rem; }
+.price small { font-weight: 500; color: var(--muted); }
+
+/* ============ Steps ============ */
+.steps-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.step-card { text-align: center; padding: 20px; }
+.step-icon { font-size: 2.6rem; margin-bottom: 12px; }
+.step-card h3 { font-size: 1.05rem; margin-bottom: 8px; }
+.step-card p { color: #94a3b8; font-size: 0.9rem; }
+
+/* ============ Why Us ============ */
+.reasons-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.reason-icon { font-size: 2rem; margin-bottom: 10px; }
+.reason-card h3 { font-size: 1.05rem; margin-bottom: 6px; }
+.reason-card p { font-size: 0.92rem; color: var(--muted); }
+
+/* ============ Booking ============ */
+.booking-wrap { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 46px; align-items: start; }
+.booking-info h2 { margin-bottom: 10px; }
+.booking-points { list-style: none; margin: 18px 0 22px; }
+.booking-points li { margin-bottom: 8px; }
+.booking-call { background: rgba(255,255,255,0.15); padding: 14px 18px; border-radius: 10px; }
+.booking-call a { color: #fde68a; font-weight: 700; }
+.booking-form { display: flex; flex-direction: column; gap: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-weight: 600; font-size: 0.88rem; color: var(--dark); }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 11px 13px; border: 2px solid #e2e8f0; border-radius: 9px;
+  font-size: 0.95rem; font-family: inherit; background: var(--bg);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: var(--primary); background: #fff;
+}
+.form-status { padding: 13px 16px; border-radius: 9px; font-weight: 600; font-size: 0.92rem; }
+.form-status.success { background: #dcfce7; color: #166534; }
+.form-status.error { background: #fee2e2; color: #991b1b; }
+
+/* ============ Testimonials ============ */
+.testimonials-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.stars { color: var(--accent); font-size: 1.1rem; margin-bottom: 10px; }
+.testimonial-card p { font-size: 0.93rem; margin-bottom: 14px; font-style: italic; }
+.testimonial-author strong { color: var(--dark); }
+.testimonial-author span { color: var(--muted); font-size: 0.85rem; }
+
+/* ============ Areas ============ */
+.areas-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 24px; }
+.chip { background: #f0fdfa; border: 1.5px solid #99f6e4; color: var(--primary-dark); padding: 8px 18px; border-radius: 50px; font-weight: 600; font-size: 0.88rem; }
+
+/* ============ Footer ============ */
+.footer { background: var(--dark); color: #94a3b8; padding: 56px 0 0; }
+.footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 34px; padding-bottom: 40px; }
+.footer h3 { color: #fff; margin-bottom: 10px; }
+.footer h4 { color: #fff; margin-bottom: 14px; }
+.footer a { display: block; color: #94a3b8; text-decoration: none; margin-bottom: 8px; }
+.footer a:hover { color: #5eead4; }
+.footer p { font-size: 0.92rem; margin-bottom: 8px; }
+.footer-bottom { border-top: 1px solid #1e293b; text-align: center; padding: 18px; font-size: 0.85rem; }
+
+.loading { text-align: center; color: var(--muted); }
+
+/* ============ Responsive ============ */
+@media (max-width: 900px) {
+  .hero-inner, .booking-wrap { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 2.1rem; }
+  .hero-cards { height: 300px; }
+}
+@media (max-width: 700px) {
+  .hamburger { display: block; }
+  .nav-links {
+    position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+    flex-direction: column; padding: 20px; gap: 16px; display: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  .nav-links.open { display: flex; }
+  .form-row { grid-template-columns: 1fr; }
+}
+</script>
+
+<!-- ==================== DOWNLOADER LOGIC ==================== -->
+<script>
+const files = [...document.querySelectorAll('script[type="text/plain"]')].map(s => ({
+  path: s.getAttribute('data-path'),
+  content: s.textContent.replace(/^\r?\n/, '').replace(/[ \t]+$/gm, '').replace(/\s*$/, '\n')
+}));
+
+function saveBlob(name, blob) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function downloadOne(f) {
+  saveBlob(f.path.split('/').pop(), new Blob([f.content], { type: 'text/plain;charset=utf-8' }));
+  toast('✅ ' + f.path.split('/').pop() + ' downloaded!');
+}
+
+// ---- Build the file list UI (grouped by folder) ----
+const groups = [];
+files.forEach(f => {
+  const i = f.path.lastIndexOf('/');
+  const dir = i === -1 ? '📄 Root files' : '📁 ' + f.path.slice(0, i) + '/';
+  let g = groups.find(x => x.dir === dir);
+  if (!g) { g = { dir, files: [] }; groups.push(g); }
+  g.files.push(f);
+});
+const list = document.getElementById('list');
+groups.forEach(g => {
+  const box = document.createElement('div');
+  box.className = 'group';
+  const h = document.createElement('h2');
+  h.textContent = g.dir;
+  box.appendChild(h);
+  g.files.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const kb = (new Blob([f.content]).size / 1024).toFixed(1) + ' KB';
+    row.innerHTML = '<span class="path">' + f.path + '</span><span class="size">' + kb + '</span>';
+    const btn = document.createElement('button');
+    btn.textContent = '⬇ Download';
+    btn.onclick = () => downloadOne(f);
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+  list.appendChild(box);
+});
+
+// ---- Build housekeep.zip entirely in the browser (no libraries, offline) ----
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function dosDT(d) {
+  return {
+    time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+    date: ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()
+  };
+}
+function downloadZip() {
+  const enc = new TextEncoder();
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  const { time, date } = dosDT(new Date());
+  files.forEach(f => {
+    const name = enc.encode(f.path);
+    const data = enc.encode(f.content);
+    const crc = crc32(data);
+    const lh = new Uint8Array(30);
+    const v = new DataView(lh.buffer);
+    v.setUint32(0, 0x04034b50, true);
+    v.setUint16(4, 20, true);
+    v.setUint16(8, 0, true);
+    v.setUint16(10, time, true);
+    v.setUint16(12, date, true);
+    v.setUint32(14, crc, true);
+    v.setUint32(18, data.length, true);
+    v.setUint32(22, data.length, true);
+    v.setUint16(26, name.length, true);
+    parts.push(lh, name, data);
+    central.push({ name, crc, size: data.length, offset });
+    offset += 30 + name.length + data.length;
+  });
+  const cdStart = offset;
+  central.forEach(c => {
+    const cd = new Uint8Array(46);
+    const v = new DataView(cd.buffer);
+    v.setUint32(0, 0x02014b50, true);
+    v.setUint16(4, 20, true);
+    v.setUint16(6, 20, true);
+    v.setUint16(12, time, true);
+    v.setUint16(14, date, true);
+    v.setUint32(16, c.crc, true);
+    v.setUint32(20, c.size, true);
+    v.setUint32(24, c.size, true);
+    v.setUint16(28, c.name.length, true);
+    v.setUint32(42, c.offset, true);
+    parts.push(cd, c.name);
+    offset += 46 + c.name.length;
+  });
+  const eocd = new Uint8Array(22);
+  const v = new DataView(eocd.buffer);
+  v.setUint32(0, 0x06054b50, true);
+  v.setUint16(8, central.length, true);
+  v.setUint16(10, central.length, true);
+  v.setUint32(12, offset - cdStart, true);
+  v.setUint32(16, cdStart, true);
+  parts.push(eocd);
+  saveBlob('housekeep.zip', new Blob(parts, { type: 'application/zip' }));
+  toast('📦 housekeep.zip downloaded!');
+}
+</script>
+</body>
+</html>
